@@ -1,6 +1,9 @@
 #OS
 .DS_Store
 
+# Vendor package
+vendor/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
