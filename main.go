@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/glog"
 )
 
@@ -34,13 +35,48 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if authenticate(requestBody) {
-		fmt.Fprint(w, "welcome")
-	} else {
+	if !authenticate(requestBody) {
 		http.Error(w, "400 bad request", http.StatusBadRequest)
 		return
 	}
 
+	token, err := issueJWT(requestBody.Username)
+	if err != nil {
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, token)
+}
+
+func issueJWT(username string) (string, error) {
+	now := time.Now()
+	minutesToAdd := time.Minute * time.Duration(5)
+	exp := now.Add(minutesToAdd)
+
+	privateKeyFile, err := os.Open("jwt-key")
+	if err != nil {
+		glog.Warningf("Private key not found.")
+		return "", err
+	}
+
+	pemfileinfo, _ := privateKeyFile.Stat()
+
+	var size int64 = pemfileinfo.Size()
+	pembytes := make([]byte, size)
+	privateKeyFile.Close()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": username,
+		"exp":      exp.Unix(),
+	})
+
+	tokenString, err := token.SignedString(pembytes)
+	if err != nil {
+		glog.Warningf("Unable to sign the JWT")
+	}
+
+	return tokenString, err
 }
 
 func main() {
