@@ -96,5 +96,7 @@ func main() {
 		WriteTimeout:      300 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
+
+	fmt.Printf("Starting server at %s...", strings.Join(addr, ":"))
 	glog.Fatal(server.ListenAndServe())
 }
